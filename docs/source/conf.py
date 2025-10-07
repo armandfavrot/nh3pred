@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.abspath('../../src'))  # chemin vers ton package
 project = 'nh3pred'
 copyright = '2025, Armand Favrot'
 author = 'Armand Favrot'
-release = "0.1.1"
+release = "0.1.2"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
