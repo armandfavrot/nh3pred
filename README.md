@@ -12,7 +12,7 @@ pip install nh3pred
 
 ## Documentation
 
-A complete documentation for the `predict` function is available [here]
+A complete documentation for the `predict` function is available [here].
 
 ## Usage
 

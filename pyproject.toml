@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "nh3pred"
 version = "0.1.0"
-description = "Predict ammonia emissions with a simple recurrent neural network model"
+description = "Predict ammonia emissions with a recurrent neural network model"
 readme = "README.md"
 requires-python = ">=3.12.3"
 authors = [
