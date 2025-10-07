@@ -1,0 +1,60 @@
+name: Run Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  testing:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - python-version: "3.12"
+            pandas-version: "2.2.3"
+            torch-version: "2.5.0"
+          - python-version: "3.13"
+            pandas-version: "2.2.3"
+            torch-version: "2.5.0"
+          - python-version: "3.12"
+            pandas-version: "latest"
+            torch-version: "latest"
+          - python-version: "3.13"
+            pandas-version: "latest"
+            torch-version: "latest"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+
+          if [ "${{ matrix.pandas-version }}" = "latest" ]; then
+            python -m pip install "pandas>=2.2.3"
+          else
+            python -m pip install pandas==${{ matrix.pandas-version }}
+          fi
+
+          if [ "${{ matrix.torch-version }}" = "latest" ]; then
+            python -m pip install "torch>=2.5.0"
+          else
+            python -m pip install torch==${{ matrix.torch-version }}
+          fi
+
+          python -m pip install .[dev]
+
+      - name: Run Pytest
+        run: pytest

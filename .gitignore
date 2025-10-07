@@ -1,0 +1,12 @@
+build/
+
+dist/ 
+
+*.egg-info/ 
+
+__pycache__/
+
+dev/
+
+.ipynb_checkpoints/ 
+.virtual_documents/
