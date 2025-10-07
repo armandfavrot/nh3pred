@@ -50,6 +50,10 @@ push = false
     'version = "{version}"',
 ]
 
+"docs/source/conf.py" = [
+    'release = "{version}"',
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
