@@ -20,7 +20,7 @@ You can use the package in Python as follows:
 
 ```python
 import pandas as pd
-from ammonia_predict_3 import predict
+from nh3pred import predict
 
 df = pd.DataFrame ({
     "pmid": [1, 1, 1, 1, 1, 1],
