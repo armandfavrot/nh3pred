@@ -12,7 +12,7 @@ pip install nh3pred
 
 ## Documentation
 
-A complete documentation for the `predict` function is available [here].
+A complete documentation for the `predict` function is available [here](https://nh3pred.readthedocs.io/en/latest/api.html#nh3pred.api.predict).
 
 ## Usage
 
@@ -44,7 +44,7 @@ print(pred)
 ## Notes
 
 - The trained weights are included in the package under `ammonia_predict/data/final_model.pth`.
-- The package requires **Python ≥3.12**, **PyTorch**, and **pandas**.
+- The package requires **Python ≥3.12**, **PyTorch ≥2.5.0**, and **pandas ≥2.2.3**.
 
 
 
