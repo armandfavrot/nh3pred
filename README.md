@@ -43,7 +43,7 @@ print(pred)
 
 ## Notes
 
-- The trained weights are included in the package under `ammonia_predict/data/final_model.pth`.
+- The trained weights are included in the package under `nh3pred/data/final_model.pth`.
 - The package requires **Python ≥3.12**, **PyTorch ≥2.5.0**, and **pandas ≥2.2.3**.
 
 
