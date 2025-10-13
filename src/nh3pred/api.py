@@ -89,10 +89,10 @@ def predict (df):
 
     Example
     --------
-    >>> # Prediction for two plots, identified with pmid = 1 and pmid = 2
     >>> import pandas as pd
     >>> from nh3pred import predict
 
+    >>> # Prediction for two plots, identified with pmid = 1 and pmid = 2
     >>> df = pd.DataFrame ({
     ...     "pmid": [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2],
     ...     "ct": [3, 6, 10, 24, 48, 72, 1, 3, 6, 10, 21, 46],
