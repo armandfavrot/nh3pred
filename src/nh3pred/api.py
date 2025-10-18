@@ -20,31 +20,12 @@ from .utils import convert_cat_variables
 from .utils import reorder_variables
 
 DEVICE = "cpu"
-num_layers = 1
-nonlinearity = "relu"
-bidirectional = True
-hidden_size = 512 
 
-cat_dims = [5, 3, 2]  
-embedding_dims = [10, 9, 8]  
-input_size = 13   
-output_size = 1
-
-model = AmmoniaRNN(input_size = input_size, 
-                   output_size = output_size, 
-                   hidden_size = hidden_size, 
-                   nonlinearity = nonlinearity,
-                   num_layers = num_layers,
-                   bidirectional = bidirectional,
-                   cat_dims = cat_dims, 
-                   embedding_dims = embedding_dims).to(DEVICE)
-
+model = AmmoniaRNN().to(DEVICE)
 
 resource = files(__package__).joinpath("data").joinpath("final_model.pth")
 with as_file(resource) as path:
     model.load_state_dict(torch.load(path, weights_only = True, map_location=torch.device('cpu')))
-
-
 
 def predict (df):
 

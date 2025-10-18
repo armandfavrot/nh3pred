@@ -3,19 +3,19 @@ import torch.nn as nn
 
 class AmmoniaRNN(nn.Module):
     
-    def __init__(self, 
-                 input_size, 
-                 output_size, 
-                 hidden_size, 
-                 num_layers,
-                 nonlinearity, 
-                 bidirectional,
-                 cat_dims = None, embedding_dims = None):
+    def __init__(self):
         
         super(AmmoniaRNN, self).__init__()
         
-        D = 1 + 1 * bidirectional
-               
+        input_size = 13   
+        output_size = 1
+        num_layers = 1
+        nonlinearity = "relu"
+        bidirectional = True
+        hidden_size = 512 
+        cat_dims = [5, 3, 2]  
+        embedding_dims = [10, 9, 8]  
+
         self.embeddings = nn.ModuleList([
             nn.Embedding(num_embeddings = cat_dim, embedding_dim = embed_dim)
             for cat_dim, embed_dim in zip(cat_dims, embedding_dims)
@@ -29,7 +29,7 @@ class AmmoniaRNN(nn.Module):
                           nonlinearity = nonlinearity, 
                           bidirectional = bidirectional)    
         
-        self.fc1 = nn.Linear(hidden_size * D, 6)
+        self.fc1 = nn.Linear(hidden_size * 2, 6) # *2 because of bidirectionality
         self.relu = nn.ReLU()
         self.fc2 = nn.Linear(6, output_size)
 
