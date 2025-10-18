@@ -1,4 +1,3 @@
-import pytest
 import pandas as pd
 
 from nh3pred.utils import complete_incorp
@@ -13,7 +12,8 @@ def test_1():
 
     df_tmp = complete_incorp (df)
     
-    for x in ["incorp", "t_incorp"]: assert x in df_tmp.columns 
+    for x in ["incorp", "t_incorp"]: 
+        assert x in df_tmp.columns 
     
     assert df["incorp"].unique() == "none"
     assert df["t_incorp"].unique() == 1000
