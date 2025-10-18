@@ -15,5 +15,8 @@ def test_predict_columns():
     })
 
     out = predict(df)
+    assert isinstance(out, pd.DataFrame)
     assert "prediction_ecum" in out.columns
     assert len(out) == len(df)
+    assert not out["prediction_ecum"].isna().any()
+    assert out["app_mthd"].isin(["bc", "bsth", "os", "ts", "cs"]).all()
