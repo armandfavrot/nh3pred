@@ -130,7 +130,6 @@ def predict (df):
     
         all_predictions = torch.empty(0).to(DEVICE)
     
-            
         for i in pmids:
     
             x = generate_tensors_predictors (data_predictions, i, device = DEVICE)
