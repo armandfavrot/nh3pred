@@ -1,0 +1,6 @@
+include README.md CHANGELOG.md VALIDATION.md
+recursive-include src/nh3pred/data *.pth *.pkl *.json
+recursive-include tests *.py *.json
+recursive-include docs *.rst *.py *.txt *.html *.css *.pdf *.qmd *.png *.json
+prune docs/_build
+global-exclude __pycache__ *.py[cod]

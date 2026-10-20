@@ -1,0 +1,150 @@
+---
+title: "Getting started with the nh3pred package"
+format:
+  html:
+    toc: true
+    embed-resources: true
+    css: styles.css
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+---
+
+## Overview
+
+The package exposes one user-facing function, `predict`. It predicts ammonia emission dynamics following fertilizer application. The model is a recurrent neural network trained on the ALFAM2 database (Hafner et al., 2025). See [here](model_description.html) for a full description of the model.
+
+This guide covers the three most common workflows:
+
+1. predicting from plot-level data only;
+2. supplying a custom time and weather table;
+3. comparing several application scenarios.
+
+## Import the package
+
+```{python}
+import matplotlib.pyplot as plt
+import pandas as pd
+
+from nh3pred import predict
+```
+
+## Minimal prediction
+
+`pdat` contains one row per field application. The `id` column uniquely identifies each application and links it to optional time-dependent data.
+
+Only the variables needed to describe this example are supplied below. All other variables are completed with package defaults.
+
+```{python}
+pdat = pd.DataFrame(
+    {
+        "id": [1],
+        "tan_app": [70],
+        "app_method": ["bc"],
+    }
+)
+
+predictions = predict(pdat)
+```
+
+When `idat` is omitted, predictions use cumulative times 2, 4, and then four-hour intervals from 4 to 48 h, and twelve-hour intervals from 48 to 240 h. The package uses a repeating default daily temperature and wind profile and assumes no rainfall.
+
+```{python}
+predictions[
+    [
+        "id",
+        "ct",
+        "air_temp",
+        "wind_2m",
+        "prediction_erel",
+        "prediction_ecum",
+    ]
+].head()
+```
+
+## Plot the prediction
+
+```{python}
+fig, ax = plt.subplots(figsize=(8, 4.5))
+ax.plot(
+    predictions["ct"],
+    predictions["prediction_ecum"],
+    color="#0072B2",
+    linewidth=2,
+    label="Prediction",
+)
+ax.set(
+    xlabel="Time since application (h)",
+    ylabel="Cumulative ammonia emissions (kgN-NH3/ha)",
+    title="Predicted ammonia emissions over time",
+)
+ax.grid(alpha=0.25)
+ax.legend(frameon=False)
+fig.tight_layout()
+plt.show()
+```
+
+## Supply custom time and weather data
+
+`idat` contains one row per application and time point. Time points may be irregular. In this example, air temperature is supplied while wind and rainfall are omitted.
+
+```{python}
+idat = pd.DataFrame(
+    {
+        "id": [1, 1, 1, 1, 1],
+        "ct": [2, 8, 20, 32, 48],
+        "air_temp": [16, 21, 13, 15, 18],
+    }
+)
+
+custom_predictions = predict(pdat, idat)
+
+custom_predictions[
+    ["id", "ct", "air_temp", "wind_2m", "rain_rate", "prediction_ecum"]
+]
+```
+
+Supplied application values are retained unless a documented completion rule applies. All numeric output columns, including times and weather, are rounded to two decimals; calculations use full-precision inputs. A missing `air_temp` or `wind_2m` column is filled by interpolating the corresponding default profile at the requested `ct` values. An absent rainfall column defaults to zero. Missing values inside a supplied weather column are not filled with the default weather profile.
+Because public predictions represent micrometeorological measurements,
+`wind_2m` is routed internally to the model's micrometeorological wind input.
+
+## Compare several scenarios
+
+Each row of `pdat` may describe a different scenario. Here, three otherwise identical applications differ only in application method.
+
+```{python}
+scenario_pdat = pd.DataFrame(
+    {
+        "id": [1, 2, 3],
+        "tan_app": [70, 70, 70],
+        "app_method": ["bc", "ts", "os"],
+    }
+)
+
+scenario_predictions = predict(scenario_pdat)
+
+scenario_predictions.groupby("id", as_index=False).tail(1)[
+    ["id", "ct", "app_method", "prediction_ecum"]
+]
+```
+
+See the [scenario comparison vignette](scenario_comparison.html) for a complete visual comparison.
+
+## Control computation time
+
+```{python}
+#| eval: false
+predictions = predict(
+    pdat,
+    idat,
+    batch_size=128,
+)
+```
+
+- `batch_size` controls how many application sequences are processed together.
+  Larger values may improve speed but require more memory.
+
+## Next steps
+
+Consult the [input reference](input_reference.html) for accepted columns, default values, and input conventions. Predictions outside the ranges represented in the training data should be interpreted cautiously.

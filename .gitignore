@@ -1,4 +1,7 @@
 build/
+docs/_build/
+.pytest_cache/
+.ruff_cache/
 
 dist/ 
 

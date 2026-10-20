@@ -1,0 +1,22 @@
+{
+  "package_version": "0.2.0",
+  "model_id": "physical-reservoir-20260915",
+  "source": "scripts/package at migration on 2026-10-19",
+  "artifacts_sha256": {
+    "default_values.pkl": "a3a9b5884c1d88cc3d9603be2b63507cc292e63a83768d0387bebab4dbfdc725",
+    "model.pth": "2baef0df0f2fffe313dd62b93c488a6bd2e11176fc1c454690d931f059207628",
+    "categorial_correspondances.pkl": "a1e3d2e440a94369b91bc0d8986131332f84110b233738afa78236ea6e62bf43",
+    "model_parameters.pkl": "7267ae4a9da0fb3a2fb3dd8ae1fc9cd3a903957d519aa40a6c26f7df73888d74",
+    "normalisation_values.pkl": "5024660fe313feb1aeb59aa837f1fe78fed9ae690801a0bbdd0bc9e68756a504"
+  },
+  "reference_cases": [
+    "defaults",
+    "batch_categories",
+    "incorporation_weather",
+    "thesis",
+    "thesis_500h"
+  ],
+  "reference_device": "cpu",
+  "torch_version": "2.6.0+cu124",
+  "pandas_version": "3.0.3"
+}

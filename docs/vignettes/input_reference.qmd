@@ -1,0 +1,107 @@
+---
+title: "Input reference"
+format:
+  html:
+    toc: true
+    embed-resources: true
+    css: styles.css
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+---
+
+## Application-level inputs
+
+Call `predict(pdat, idat=None, batch_size=128)` with a pandas DataFrame containing
+one application per `id`. Required columns are `id`, `tan_app` (applied total
+ammoniacal nitrogen, kg N/ha), and `app_method`. Use positive applied TAN.
+Identifiers must be consistent between `pdat` and `idat`.
+
+The following tables are generated from the parameters shipped with the installed
+release. Access to these internal objects is used for documentation only; the
+public interface is `from nh3pred import predict`.
+
+```{python}
+#| echo: false
+#| output: asis
+from nh3pred.preprocessing import (
+    categorial_correspondances, default_values, public_fertiliser_categories,
+)
+
+print("| Input | Accepted categories (case-sensitive) | Default |")
+print("|---|---|---|")
+for name in ["app_method", "incorp", "till", "fer_origin", "fer_forme",
+             "fer_trt1", "fer_trt2", "crop", "soil_type"]:
+    categories = public_fertiliser_categories.get(
+        name, set(categorial_correspondances[name])
+    )
+    if name == "crop":
+        categories = set(categories) - {"unknown"}
+    values = ", ".join(f"`{value}`" for value in sorted(categories))
+    default = "required" if name == "app_method" else str(default_values[name])
+    print(f"| `{name}` | {values} | {default} |")
+```
+
+Application methods are broadcast (`bc`), band spreading/trailing hose (`bsth`),
+trailing shoe (`ts`), open slot (`os`), closed slot (`cs`) and pressurised
+injection (`pi`). Origins include cattle (`cat`), pig (`pig`), concentrate
+(`conc`), mixed (`mix`) and other (`other`). Treatments are represented by two
+separate columns: `fer_trt1` and `fer_trt2`. `meas_tech` and `fer_trt3` are
+internal model variables and are rejected as public inputs.
+
+| Numeric input | Unit | Default or missing-value rule |
+|---|---|---|
+| `app_rate` | t/ha | 20.457020689428806 + 0.25233812374128917 × `tan_app` |
+| `fer_dm` | % | 6.59 |
+| `fer_ph` | pH | 7.3 |
+| `crop_z` | cm | 10 for a crop; not applicable for bare soil |
+| `time_incorp` | h | 0.05 for incorporation; not applicable for `none` |
+| `furrow_z` | cm | Missing unless supplied |
+| `soil_water` | volumetric fraction | 0.2715 |
+| `soil_ph` | pH | 6.5 |
+| `soil_dens` | g/cm³ | 1.14 |
+| `soil_oc` | % | 3.49 |
+
+Supply measured values where possible. Defaults are not substitutes for site
+characterisation. Selecting a solid fertilizer does not automatically adjust
+dry matter or produce a low-dry-matter warning. The package does not validate
+every physical range or scientifically plausible combination of predictors.
+
+## Time and weather
+
+Optional `idat` has one row per time point and application, with `id` and `ct`
+(hours since application). Supply strictly increasing positive times for each
+application, without duplicates. Weather inputs are `air_temp` (°C), `wind_2m`
+(m/s at 2 m), and `rain_rate` (mm/h).
+
+If `idat` is omitted, predictions use 29 default time points: 2, 4, then every
+4 hours through 48 h, followed by every 12 hours through 240 h. Missing weather
+columns receive the bundled default profiles for air temperature and wind,
+and zero rain. Profiles are linearly interpolated at the requested times;
+outside their time range, endpoint values are held constant. Missing entries
+in an existing weather column retain the model's missing-value representation.
+`rain_cum` is computed from interval durations and `rain_rate`; a supplied
+`rain_cum` column is overwritten.
+
+```{python}
+import pandas as pd
+from nh3pred import predict
+
+reference_pdat = pd.DataFrame({"id": [1], "tan_app": [100.0], "app_method": ["bc"]})
+reference_idat = pd.DataFrame({
+    "id": [1, 1, 1], "ct": [2.0, 24.0, 48.0],
+    "air_temp": [12.0, 15.0, 13.0], "wind_2m": [2.0, 3.0, 2.0],
+    "rain_rate": [0.0, 0.0, 0.0],
+})
+predict(reference_pdat, reference_idat)[["id", "ct", "prediction_ecum", "prediction_erel"]]
+```
+
+## Output and interpretation
+
+`prediction_ecum` is cumulative NH$_3$ emission in kg N/ha; `prediction_erel` is
+the fraction of applied TAN emitted (not a percentage). All numeric output
+columns, including copied inputs, are rounded to two decimals. Computation uses
+unrounded inputs. The reservoir model constrains cumulative emissions to be
+non-decreasing and at most the applied TAN. Long-horizon predictions and unusual
+input combinations remain extrapolations, not validated field forecasts.

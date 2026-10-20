@@ -11,4 +11,6 @@ This package provides a function to predict ammonia volatilization after manure 
 .. toctree::
    :maxdepth: 2
 
-   api 
+   api
+   migration
+   vignettes

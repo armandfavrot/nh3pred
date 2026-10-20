@@ -1,0 +1,15 @@
+{
+  "fingerprint": "76e1c0f0ae1aa173e855d49403601cd34d2d5c589c26f57834da6e325f32b539",
+  "n_pmids": 2216,
+  "population": "all prepared PMIDs",
+  "target": "absolute cumulative emission at each PMID's last observed time",
+  "bins": 10,
+  "repeats": 5,
+  "seed": 42,
+  "skipped": {},
+  "defaults": {
+    "time_incorp": 0.05,
+    "crop_z": 10.0
+  },
+  "baseline_mae": 4.887735121764249
+}

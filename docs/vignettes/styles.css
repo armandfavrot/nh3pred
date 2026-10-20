@@ -1,0 +1,4 @@
+/* Give Markdown and pandas tables the same width throughout the vignettes. */
+.quarto-container table {
+  width: 100% !important;
+}

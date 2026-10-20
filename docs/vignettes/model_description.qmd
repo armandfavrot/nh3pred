@@ -1,0 +1,233 @@
+---
+title: "Model architecture and interpretation"
+format:
+  html:
+    toc: true
+    embed-resources: true
+    css: styles.css
+jupyter: python3
+execute:
+  echo: false
+  warning: false
+---
+
+## A recurrent model coupled to a TAN reservoir
+
+The package predicts the dynamics of ammonia emissions following fertilizer application. Its recurrent neural network describes how environmental and management conditions change the rate of emission. A reservoir decoder converts this rate into a non-decreasing cumulative emission bounded by the applied TAN. In addition to cumulative emissions, the model internally produces an interval-average ammonia flux. This flux is used during training as an additional supervised target, but only cumulative emissions are returned by the package's `predict()` function. @fig-description-architecture summarizes the prediction pathway, from the inputs to cumulative emissions and interval-average fluxes.
+
+![Architecture of the recurrent model coupled to a finite TAN reservoir. The neural network predicts a non-negative kinetic rate, which controls the fraction emitted from the remaining reservoir during each interval. Multiplication by applied TAN gives absolute cumulative emissions and interval-average fluxes.](model_description_results/model_architecture){#fig-description-architecture width=75%}
+
+```{python}
+#| echo: false
+#| output: false
+import json
+import pickle
+from pathlib import Path
+
+import pandas as pd
+from IPython.display import display, Markdown
+from importlib.resources import files
+
+OUTPUT = Path("model_description_results")
+
+# Read precomputed interpretation summaries; no training data are needed.
+description_metadata = json.loads((OUTPUT / "metadata.json").read_text())
+with files("nh3pred").joinpath("data/model_parameters.pkl").open("rb") as f:
+  description_parameters = pickle.load(f)
+```
+
+### Neural architecture
+
+At each time interval, normalized numerical predictors are concatenated with learned embeddings of the categorical predictors. Plot-level characteristics are repeated along the sequence; time and weather inputs change between intervals. 
+
+
+```{python}
+#| echo: false
+description_architecture = pd.DataFrame({
+    "Component": ["Embedding dimensions per category",
+                  "Recurrent layers", "Hidden units", "Recurrent activation",
+                  "Prediction head"],
+    "Model configuration": [str(description_parameters["embedding_dims"][0]),
+                      str(description_parameters["num_layers"]),
+                      str(description_parameters["hidden_size"]),
+                      description_parameters["nonlinearity"],
+                      "Linear (512 to 6), ReLU, linear (6 to 1)",
+                      ]
+})
+display(Markdown("| Component | Model configuration |\n|---|---|\n" + "\n".join(
+    f"| {component} | {value} |" for component, value in
+    description_architecture.itertuples(index=False, name=None))))
+```
+
+The recurrent hidden state retains information from preceding intervals. For each interval starting at time $t$, the final linear layer produces one unrestricted value $z_t$.
+
+### Reservoir decoder
+
+The neural output is transformed into a non-negative kinetic rate:
+
+$$
+r_t=0.01\,\operatorname{softplus}(z_t),
+\qquad
+\operatorname{softplus}(z)=\log(1+\exp(z)).
+$$
+
+The kinetic rate $r_t$ has units of h$^{-1}$. Let $E_t$ denote the relative cumulative ammonia emission at time $t$, expressed as a fraction of applied TAN, and let $dt$ be the duration of interval $[t,t+dt]$. The relative emission during this interval is
+
+$$
+\Delta E_t
+=\left(1-E_t\right)
+\left[1-\exp\left(-r_t\,dt\right)\right].
+$$
+
+The relative cumulative emission and relative interval-average flux are then
+
+$$
+E_{t+dt}=E_t+\Delta E_t,
+\qquad
+J_t=\frac{\Delta E_t}{dt}.
+$$
+
+The term $1-E_t$ represents the fraction of applied TAN remaining in the reservoir. As emissions accumulate, this remaining fraction decreases and limits the amount that can be emitted during subsequent intervals. Starting from $E_0=0$, this construction ensures that
+
+$$
+\Delta E_t\geq0,
+\qquad
+J_t\geq0,
+\qquad
+0\leq E_t\leq1.
+$$
+
+Consequently, relative cumulative emissions are non-decreasing and remain bounded by 100\% of applied TAN (finite precision and output rounding can produce exactly 100\%). The corresponding absolute cumulative emission and absolute interval-average flux are
+
+$$
+E_t^{\mathrm{abs}}=\mathrm{TAN}\,E_t,
+\qquad
+J_t^{\mathrm{abs}}=\mathrm{TAN}\,J_t,
+$$
+
+expressed in kgN-NH$_3$ ha$^{-1}$ and kgN-NH$_3$ ha$^{-1}$ h$^{-1}$, respectively.
+
+### Supervision
+
+The model is trained with two targets: cumulative emissions relative to TAN, and the logarithm of interval flux relative to TAN. The loss is the sum of the mean squared errors of these two normalized targets, with flux weight 1. The relative flux is floored at $10^{-6}$ before taking its logarithm for numerical stability; this floor is not a lower bound imposed on the returned physical flux. 
+
+## Population and response used for interpretation
+
+The interpretation figures below were computed on all 2,216 prepared applications (including the validation subset), not on an independent test set. They are distributed as precomputed figures with their calculation metadata; rendering this vignette does not retrain the model or read experimental records. They concern the cumulative emission at the last observed time of each plot, expressed in kgN-NH$_3$ ha$^{-1}$.
+
+```{python}
+#| echo: false
+display(Markdown(
+    f"The interpretation dataset contains {description_metadata['n_pmids']:,} plots "
+    "from all measurement methods."
+))
+```
+
+## Variable importance for the final cumulative emission
+
+Permutation importance for final cumulative emissions is shown in @fig-description-importance. Importance is measured as the increase in MAE after permuting an input across plots, with five repetitions and a fixed random seed. The graph shows the mean increase and the standard deviation across permutations. This follows the permutation model-reliance principle of [Fisher, Rudin and Dominici (2019)](https://jmlr.org/papers/v20/18-760.html).
+
+Permutations respect complete predictor groups where required:
+
+- Prediction times (`ct`) are treated as a single time-grid feature. During permutation, the time grid from another plot is assigned to the current plot and adapted to match its number of observations while retaining the final prediction horizon of the permuted grid. The weather sequence is then aligned with this modified time grid. The resulting importance therefore reflects the model's sensitivity to both the temporal sampling pattern and the final prediction horizon.
+- Weather profiles are transferred between plots while preserving their temporal pattern and adapting them to the target plot's time grid.
+- Incorporation type and incorporation delay are permuted together, as are crop type and crop height.
+
+Permutation can still create unusual combinations of the remaining predictors, and correlated variables can share predictive information. A small importance does not establish that a variable is physically not important.
+
+![Permutation importance for cumulative emissions. Bars show mean MAE increases and whiskers show permutation standard deviations.](model_description_results/importance){#fig-description-importance width=85%}
+
+## Accumulated local effects for continuous variables
+
+@fig-description-ale shows the accumulated local effects (ALE) of the continuous predictors on predicted final cumulative emissions. ALE describes how the model prediction changes locally as a predictor varies over the range represented in the interpretation dataset, while limiting the extrapolation associated with changing that predictor globally [Apley and Zhu (2020)](https://doi.org/10.1111/rssb.12377). For each predictor, the observed range is divided into up to ten quantile-based intervals. Within each interval, predictions are compared after moving the predictor to the lower and upper interval boundaries while retaining the other predictor values. These local differences are averaged, accumulated across intervals, and centered around zero. A detailed description of the calculation is provided in the appendix below.
+
+An ALE value of +2 kgN-NH$_3$ ha$^{-1}$ is a centered model effect, not an absolute emission prediction. These curves show local sensitivity over the observed predictor distribution. They reduce the extrapolation involved in a global PDP, without guaranteeing that all perturbed combinations are experimentally plausible.
+
+Crop height is analyzed only where `crop != bare soil`, and incorporation delay only where `incorp != none`. 
+
+For weather variables, the horizontal axis summarizes the weather conditions over the full trajectory:
+
+- Temperature: interval-duration-weighted mean, modified by an additive shift of the full temperature profile.
+- Wind: interval-duration-weighted mean, modified by multiplying the full profile by a positive factor. This ALE is calculated only from trials measured with micrometeorological methods. 
+- Rainfall: interval-duration-weighted mean rainfall rate, modified by multiplying the full rainfall profile by a positive factor. Dry profiles are excluded.
+
+![First-order ALE of cumulative emissions. The histograms below each ALE curve show the distribution of the predictor values among the plots contributing to the calculation.](model_description_results/ale){#fig-description-ale width=100%}
+
+```{python}
+#| echo: false
+if description_metadata["skipped"]:
+    display(Markdown("Features without an estimable curve: " + "; ".join(
+        f"`{k}`: {v}" for k, v in description_metadata["skipped"].items())))
+```
+
+## Partial dependence for categorical variables
+
+@fig-description-pdp shows the partial dependence of final cumulative emissions on the categorical predictors.
+
+For each category observed in the interpretation dataset, that category is assigned to every plot and the predicted final cumulative emissions are averaged. 
+
+Most inputs remain fixed. Two dependent-input adjustments are needed:
+
+- For `incorp = none`, the delay becomes non-applicable. For an active incorporation category, an existing observed delay is retained; otherwise the median observed applicable delay is assigned.
+- For `crop = bare soil`, height becomes non-applicable. When moving a bare-soil trajectory to vegetation, the median observed applicable height is assigned.
+
+```{python}
+#| echo: false
+display(Markdown(
+    f"The replacement delay is {description_metadata['defaults']['time_incorp']:g} h "
+    f"and the replacement height is {description_metadata['defaults']['crop_z']:g} cm."
+))
+```
+
+Other dependencies, such as fertilizer treatment and pH, are not reconstructed. 
+
+![Partial dependence plot of categorical predictors based on cumulative emissions. Bars show mean predictions for each category, and numbers next to category labels indicate their observed frequencies in the interpretation dataset.](model_description_results/pdp_2){#fig-description-pdp width=125%}
+
+
+## Appendix: Detailed ALE calculation {#sec-ale-calculation}
+
+Let $f(x_i)$ denote the final absolute emission predicted for plot $i$, and let $x_{ij}$ be the value of continuous predictor $j$ for that plot. The observed values of predictor $j$ are divided into up to ten quantile-based intervals,
+
+$$
+[z_0,z_1], [z_1,z_2], \ldots, [z_{K-1},z_K].
+$$
+
+Because the interval limits are based on quantiles, the intervals are intended to contain similar numbers of plots. However, repeated identical predictor values can cause several quantile boundaries to coincide, reducing the number of distinct intervals and leading to unequal numbers of contributing plots across intervals.
+
+For every plot $i$ whose observed value belongs to interval $k$, predictor $j$ is successively set to the lower and upper limits of that interval while all other predictors, denoted by $x_{i,-j}$, are retained. The local change in predicted final emission is
+
+$$
+\Delta_{ik}
+=f(z_k,x_{i,-j})-f(z_{k-1},x_{i,-j}).
+$$
+
+The mean local effect within interval $k$ is then
+
+$$
+\delta_k
+=\frac{1}{n_k}
+\sum_{i:x_{ij}\in[z_{k-1},z_k]}\Delta_{ik},
+$$
+
+where $n_k$ is the number of contributing plots in that interval. These mean local effects are accumulated across successive intervals. At boundary $z_k$, the uncentered accumulated effect is
+
+$$
+\widetilde{ALE}_j(z_k)=\sum_{\ell=1}^{k}\delta_\ell,
+\qquad \widetilde{ALE}_j(z_0)=0.
+$$
+
+Finally, the curve is centered by subtracting the weighted average of the accumulated effect at the midpoint of each interval:
+
+$$
+C_j
+=\frac{\sum_{k=1}^{K}n_k
+\left[\widetilde{ALE}_j(z_{k-1})+
+\widetilde{ALE}_j(z_k)\right]/2}
+{\sum_{k=1}^{K}n_k},
+$$
+
+$$
+ALE_j(z_k)=\widetilde{ALE}_j(z_k)-C_j.
+$$
+
+An ALE value of $+2$ kgN-NH$_3$ ha$^{-1}$ is therefore not an absolute prediction. It indicates that the model effect around that part of the predictor distribution is approximately 2 kgN-NH$_3$ ha$^{-1}$ above its average centered effect. The shape and slope of the curve are consequently more informative than its absolute vertical position: an increasing curve indicates that locally increasing the predictor tends to increase the predicted final emission, while a decreasing curve indicates the opposite.

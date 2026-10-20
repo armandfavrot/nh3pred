@@ -1,0 +1,242 @@
+---
+title: "Scenario comparisons"
+subtitle: "Relative ammonia emissions across different application strategies"
+format:
+  html:
+    toc: true
+    embed-resources: true
+    css: styles.css
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+---
+
+## Objective
+
+This section illustrates how the model can be used to compare six application strategies across a common set of fertiliser scenarios. The strategies are broadcast application (`bc`), broadcast application followed by immediate deep incorporation, band spreading with trailing hoses (`bsth`), trailing shoe (`ts`), open-slot injection (`os`), and closed-slot injection (`cs`).
+
+## Setup
+
+```{python}
+from itertools import product
+import matplotlib.pyplot as plt
+from matplotlib.ticker import PercentFormatter
+import pandas as pd
+
+from nh3pred import predict
+```
+
+## Define the scenarios
+
+The scenarios are defined by combining different values of fertiliser origin, application rate and applied TAN, dry matter, and fertiliser pH. The numerical values below are fixed illustrative levels retained from the research scenarios; this example does not compute quantiles from a local training dataset. For `tan_app` and `app_rate`, values at the same quantile level are paired. The full factorial design combines:
+
+- cattle and pig fertiliser origins;
+- three paired levels of applied TAN and application rate;
+- three levels of dry matter and fertiliser pH;
+- the six application strategies.
+
+This gives 324 predictions: 54 fertiliser scenarios for each strategy.
+
+All other inputs, including crop, tillage, and soil type, are omitted and completed with the package defaults.
+
+```{python}
+quantile_levels = [0.25, 0.5, 0.75]
+quantiles = pd.DataFrame(
+    {
+        "tan_app": [43.68, 68.59, 106.20],
+        "app_rate": [26.67, 35.00, 45.74],
+        "fer_dm": [3.4, 5.5, 7.4],
+        "fer_ph": [7.10, 7.35, 7.70],
+    },
+    index=quantile_levels,
+)
+
+method_settings = [
+    ("bc", "bc", "none", None),
+    ("bc + deep\nincorp.", "bc", "deep", 0.05),
+    ("bsth", "bsth", "none", None),
+    ("ts", "ts", "none", None),
+    ("os", "os", "none", None),
+    ("cs", "cs", "none", None),
+]
+
+rows = []
+for fer_origin, pair_q, dm_q, ph_q, method in product(
+    ["cat", "pig"],
+    quantile_levels,
+    quantile_levels,
+    quantile_levels,
+    method_settings,
+):
+    method_label, app_method, incorp, time_incorp = method
+    rows.append(
+        {
+            "fer_origin": fer_origin,
+            "tan_app": quantiles.loc[pair_q, "tan_app"],
+            "app_rate": quantiles.loc[pair_q, "app_rate"],
+            "fer_dm": quantiles.loc[dm_q, "fer_dm"],
+            "fer_ph": quantiles.loc[ph_q, "fer_ph"],
+            "app_method": app_method,
+            "incorp": incorp,
+            "time_incorp": time_incorp,
+            "method": method_label,
+            "tan_app_rate_quantile": pair_q,
+            "fer_dm_quantile": dm_q,
+            "fer_ph_quantile": ph_q,
+        }
+    )
+
+pdat = pd.DataFrame(rows)
+pdat.insert(0, "id", range(1, len(pdat) + 1))
+pdat.iloc[:,:8].head()
+```
+
+## Generate predictions
+
+No time-dependent data are supplied, predictions are made using the default time sequence and weather profiles. The output column `prediction_erel` is the predicted cumulative emission divided by the applied TAN.
+
+```{python}
+predictions = predict(pdat)
+
+predictions[
+    [
+        "id",
+        "ct",
+        "app_method",
+        "incorp",
+        "prediction_ecum",
+        "prediction_erel",
+    ]
+].head()
+```
+
+## Compare relative emissions at 240h
+
+For each scenario, only the prediction at 240 hours is retained. Each box therefore summarises the same 54 combinations of fertiliser origin and numerical predictor values used to define the scenarios.
+
+```{python}
+cumulative_predictions = (
+    predictions.sort_values("ct")
+    .groupby("id", as_index=False)
+    .tail(1)
+)
+
+method_order = [setting[0] for setting in method_settings]
+colors = ["#0072B2", "#56B4E9", "#E69F00", "#009E73", "#D55E00", "#CC79A7"]
+
+
+def plot_cumulative_emissions(cumulative_predictions, title):
+    boxplot_data = [
+        cumulative_predictions.loc[
+            cumulative_predictions["method"].eq(method), "prediction_erel"
+        ]
+        for method in method_order
+    ]
+    fig, ax = plt.subplots(figsize=(11, 5.5))
+    boxes = ax.boxplot(
+        boxplot_data,
+        tick_labels=method_order,
+        patch_artist=True,
+        showfliers=True,
+    )
+    for box, color in zip(boxes["boxes"], colors):
+        box.set_facecolor(color)
+        box.set_alpha(0.75)
+    ax.yaxis.set_major_formatter(PercentFormatter(xmax=1))
+    ax.set(
+        xlabel="Application strategy",
+        ylabel="Relative emission at 240h (% of applied TAN)",
+        title=title,
+    )
+    ax.tick_params(axis="x", rotation=20)
+    ax.grid(axis="y", alpha=0.25)
+    fig.tight_layout()
+    plt.show()
+
+
+plot_cumulative_emissions(
+    cumulative_predictions,
+    "Relative emissions at 240 h across application strategies",
+)
+```
+
+## Compare emission dynamics
+
+The panels below show all scenario trajectories for each application strategy. Thin lines represent individual combinations of fertiliser origin and numerical predictor values, while thick lines show the median trajectory for cattle and pig fertilisers.
+
+```{python}
+def plot_emission_dynamics(predictions):
+    origins = {
+        "cat": ("Cattle", "#0072B2"),
+        "pig": ("Pig", "#D55E00"),
+    }
+    fig, axes = plt.subplots(
+        2,
+        3,
+        figsize=(13, 8),
+        sharex=True,
+        sharey=True,
+    )
+
+    for ax, method in zip(axes.flat, method_order):
+        method_data = predictions.loc[predictions["method"].eq(method)]
+        for origin, (label, color) in origins.items():
+            origin_data = method_data.loc[
+                method_data["fer_origin"].eq(origin)
+            ]
+            for _, trajectory in origin_data.groupby("id", sort=False):
+                trajectory = trajectory.sort_values("ct")
+                ax.plot(
+                    trajectory["ct"],
+                    trajectory["prediction_erel"],
+                    color=color,
+                    alpha=0.12,
+                    linewidth=0.8,
+                )
+
+            median = origin_data.groupby("ct", as_index=False)[
+                "prediction_erel"
+            ].median()
+            ax.plot(
+                median["ct"],
+                median["prediction_erel"],
+                color=color,
+                linewidth=2.5,
+                label=label,
+            )
+
+        ax.set_title(method.replace("\n", " "))
+        ax.axhline(0, color="black", linewidth=0.8, alpha=0.5)
+        ax.yaxis.set_major_formatter(PercentFormatter(xmax=1))
+        ax.grid(alpha=0.25)
+
+    for ax in axes[-1, :]:
+        ax.set_xlabel("Time since application (h)")
+    fig.supylabel(
+        "Relative emissions (% of applied TAN)",
+        x=0.01,
+    )
+    handles, labels = axes[0, 0].get_legend_handles_labels()
+    fig.legend(
+        handles,
+        labels,
+        loc="lower center",
+        ncols=2,
+        frameon=False,
+        bbox_to_anchor=(0.5, 0.01),
+    )
+    fig.suptitle(
+        "Predicted ammonia-emission dynamics by application strategy",
+        fontsize=16,
+        y=0.98,
+    )
+    fig.tight_layout(rect=[0, 0.07, 1, 0.95])
+    plt.show()
+
+
+plot_emission_dynamics(predictions)
+```
+
+
+See the [getting-started guide](getting_started.html) for custom weather data and the [input reference](input_reference.html) for accepted variables and categories.
