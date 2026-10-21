@@ -9,15 +9,15 @@
 project = "nh3pred"
 copyright = "2025, Armand Favrot"
 author = "Armand Favrot"
-release = "0.2.0"
+release = "0.2.1"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "sphinx.ext.autodoc",  # génère doc à partir des docstrings
+    "sphinx.ext.autodoc",  # generate documentation from docstrings
     "sphinx.ext.napoleon",  # support Google/NumPy style docstrings
-    "sphinx.ext.viewcode",  # ajoute des liens vers le code source
+    "sphinx.ext.viewcode",  # add links to the source code
 ]
 
 templates_path = ["_templates"]

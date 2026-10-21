@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nh3pred"
-version = "0.2.0"
+version = "0.2.1"
 description = "Predict ammonia emissions with a recurrent neural network model"
 readme = "README.md"
 license = "MIT"
@@ -42,7 +42,7 @@ where = ["src"]
 nh3pred = ["data/*.pth", "data/*.pkl", "data/*.json"]
 
 [tool.bumpver]
-current_version = "0.2.0"
+current_version = "0.2.1"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "bump version {old_version} -> {new_version}"
 tag_message = "{new_version}"

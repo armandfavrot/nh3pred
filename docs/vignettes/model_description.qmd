@@ -30,7 +30,7 @@ from importlib.resources import files
 
 OUTPUT = Path("model_description_results")
 
-# Read precomputed interpretation summaries; no training data are needed.
+# Load the original precomputed results without the research data or scripts.
 description_metadata = json.loads((OUTPUT / "metadata.json").read_text())
 with files("nh3pred").joinpath("data/model_parameters.pkl").open("rb") as f:
   description_parameters = pickle.load(f)
@@ -94,10 +94,10 @@ $$
 \qquad
 J_t\geq0,
 \qquad
-0\leq E_t\leq1.
+0\leq E_t<1.
 $$
 
-Consequently, relative cumulative emissions are non-decreasing and remain bounded by 100\% of applied TAN (finite precision and output rounding can produce exactly 100\%). The corresponding absolute cumulative emission and absolute interval-average flux are
+Consequently, relative cumulative emissions are non-decreasing and remain below 100\% of applied TAN. The corresponding absolute cumulative emission and absolute interval-average flux are
 
 $$
 E_t^{\mathrm{abs}}=\mathrm{TAN}\,E_t,
@@ -113,12 +113,12 @@ The model is trained with two targets: cumulative emissions relative to TAN, and
 
 ## Population and response used for interpretation
 
-The interpretation figures below were computed on all 2,216 prepared applications (including the validation subset), not on an independent test set. They are distributed as precomputed figures with their calculation metadata; rendering this vignette does not retrain the model or read experimental records. They concern the cumulative emission at the last observed time of each plot, expressed in kgN-NH$_3$ ha$^{-1}$.
+All interpretation analyses below are based on the data used to train the model and concern the cumulative emission at the last observed time of each plot, expressed in kgN-NH$_3$ ha$^{-1}$.
 
 ```{python}
 #| echo: false
 display(Markdown(
-    f"The interpretation dataset contains {description_metadata['n_pmids']:,} plots "
+    f"The training dataset contains {description_metadata['n_pmids']:,} plots "
     "from all measurement methods."
 ))
 ```
@@ -139,7 +139,7 @@ Permutation can still create unusual combinations of the remaining predictors, a
 
 ## Accumulated local effects for continuous variables
 
-@fig-description-ale shows the accumulated local effects (ALE) of the continuous predictors on predicted final cumulative emissions. ALE describes how the model prediction changes locally as a predictor varies over the range represented in the interpretation dataset, while limiting the extrapolation associated with changing that predictor globally [Apley and Zhu (2020)](https://doi.org/10.1111/rssb.12377). For each predictor, the observed range is divided into up to ten quantile-based intervals. Within each interval, predictions are compared after moving the predictor to the lower and upper interval boundaries while retaining the other predictor values. These local differences are averaged, accumulated across intervals, and centered around zero. A detailed description of the calculation is provided in the appendix below.
+@fig-description-ale shows the accumulated local effects (ALE) of the continuous predictors on predicted final cumulative emissions. ALE describes how the model prediction changes locally as a predictor varies over the range represented in the training data, while limiting the extrapolation associated with changing that predictor globally [Apley and Zhu (2020)](https://doi.org/10.1111/rssb.12377). For each predictor, the observed range is divided into up to ten quantile-based intervals. Within each interval, predictions are compared after moving the predictor to the lower and upper interval boundaries while retaining the other predictor values. These local differences are averaged, accumulated across intervals, and centered around zero. A detailed description of the calculation is provided in the appendix below.
 
 An ALE value of +2 kgN-NH$_3$ ha$^{-1}$ is a centered model effect, not an absolute emission prediction. These curves show local sensitivity over the observed predictor distribution. They reduce the extrapolation involved in a global PDP, without guaranteeing that all perturbed combinations are experimentally plausible.
 
@@ -164,7 +164,7 @@ if description_metadata["skipped"]:
 
 @fig-description-pdp shows the partial dependence of final cumulative emissions on the categorical predictors.
 
-For each category observed in the interpretation dataset, that category is assigned to every plot and the predicted final cumulative emissions are averaged. 
+For each category observed in the training data, that category is assigned to every plot and the predicted final cumulative emissions are averaged. 
 
 Most inputs remain fixed. Two dependent-input adjustments are needed:
 
@@ -181,7 +181,7 @@ display(Markdown(
 
 Other dependencies, such as fertilizer treatment and pH, are not reconstructed. 
 
-![Partial dependence plot of categorical predictors based on cumulative emissions. Bars show mean predictions for each category, and numbers next to category labels indicate their observed frequencies in the interpretation dataset.](model_description_results/pdp_2){#fig-description-pdp width=125%}
+![Partial dependence plot of categorical predictors based on cumulative emissions. Bars show mean predictions for each category, and numbers next to category labels indicate their observed frequencies in the training data.](model_description_results/pdp_2){#fig-description-pdp width=125%}
 
 
 ## Appendix: Detailed ALE calculation {#sec-ale-calculation}

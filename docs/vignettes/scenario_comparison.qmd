@@ -29,11 +29,11 @@ from nh3pred import predict
 
 ## Define the scenarios
 
-The scenarios are defined by combining different values of fertiliser origin, application rate and applied TAN, dry matter, and fertiliser pH. The numerical values below are fixed illustrative levels retained from the research scenarios; this example does not compute quantiles from a local training dataset. For `tan_app` and `app_rate`, values at the same quantile level are paired. The full factorial design combines:
+The scenarios are defined by combining different values of fertiliser origin, application rate and applied TAN, dry matter, and fertiliser pH. For the numerical variables, the values below are the quantiles calculated from the training data used to fit the model. For `tan_app` and `app_rate`, values at the same quantile level are paired. The full factorial design combines:
 
 - cattle and pig fertiliser origins;
-- three paired levels of applied TAN and application rate;
-- three levels of dry matter and fertiliser pH;
+- paired 25th, 50th, and 75th percentiles of applied TAN and application rate;
+- the 25th, 50th, and 75th percentiles of dry matter and fertiliser pH;
 - the six application strategies.
 
 This gives 324 predictions: 54 fertiliser scenarios for each strategy.

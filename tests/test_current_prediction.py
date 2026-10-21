@@ -27,8 +27,8 @@ def _example_data():
         }
     )
 
-    # Les ids sont volontairement entrelacés pour vérifier que les
-    # prédictions sont réaffectées aux bonnes lignes.
+    # IDs are deliberately interleaved to check that predictions are
+    # assigned back to the correct rows.
     idat = pd.DataFrame(
         {
             "id": [1, 2, 3, 1, 2, 3, 1, 3],
@@ -156,7 +156,7 @@ def test_delta_draws_are_accumulated_independently():
 
 
 def test_e_rel_conversion_requires_applied_tan():
-    with pytest.raises(ValueError, match="tan_app est requis"):
+    with pytest.raises(ValueError, match="tan_app is required"):
         _to_cumulative_emissions(
             np.array([1.0]),
             "e_rel",
@@ -210,7 +210,7 @@ def test_unknown_crop_is_not_exposed_by_the_public_preprocessing():
         }
     )
 
-    with pytest.raises(ValueError, match="n'est pas autorisée pour crop"):
+    with pytest.raises(ValueError, match="is not allowed for crop"):
         _complete_pdat(pdat)
 
 
@@ -225,7 +225,7 @@ def test_positive_crop_height_is_rejected_for_bare_soil():
         }
     )
 
-    with pytest.raises(ValueError, match="crop_z doit être manquant ou nul"):
+    with pytest.raises(ValueError, match="crop_z must be missing or zero"):
         _complete_pdat(pdat)
 
 
@@ -267,10 +267,10 @@ def test_app_rate_default_is_computed_from_tan_app():
 
 
 def test_app_method_is_required_and_cannot_be_missing():
-    with pytest.raises(ValueError, match="app_method est requis"):
+    with pytest.raises(ValueError, match="app_method is required"):
         _complete_pdat(pd.DataFrame({"id": [1], "tan_app": [50.0]}))
 
-    with pytest.raises(ValueError, match="app_method ne peut pas"):
+    with pytest.raises(ValueError, match="app_method must not contain missing values"):
         _complete_pdat(
             pd.DataFrame(
                 {
@@ -333,7 +333,7 @@ def test_fertiliser_defaults_are_used_for_absent_and_missing_values():
             "tan_app": [50.0],
             "app_method": ["bc"],
             "fer_origin": [np.nan],
-            "fer_forme": [np.nan],
+            "fer_form": [np.nan],
             "fer_trt1": [np.nan],
             "fer_trt2": [np.nan],
             "fer_dm": [np.nan],
@@ -344,7 +344,7 @@ def test_fertiliser_defaults_are_used_for_absent_and_missing_values():
 
     for variable in [
         "fer_origin",
-        "fer_forme",
+        "fer_form",
         "fer_trt1",
         "fer_trt2",
         "fer_dm",
@@ -361,7 +361,7 @@ def test_fertiliser_defaults_are_used_for_absent_and_missing_values():
     ("variable", "value"),
     [
         ("fer_origin", "mink"),
-        ("fer_forme", "unknown"),
+        ("fer_form", "unknown"),
         ("fer_trt1", "Low DM"),
         ("fer_trt2", "Disruption"),
     ],
@@ -376,7 +376,7 @@ def test_untrained_fertiliser_categories_are_rejected(variable, value):
         }
     )
 
-    with pytest.raises(ValueError, match=f"pour {variable}"):
+    with pytest.raises(ValueError, match=f"for {variable}"):
         _complete_pdat(pdat)
 
 
@@ -390,7 +390,7 @@ def test_fer_trt3_is_not_a_public_input():
         }
     )
 
-    with pytest.raises(ValueError, match="fer_trt3 n'est pas"):
+    with pytest.raises(ValueError, match="fer_trt3 is not"):
         _complete_pdat(pdat)
 
 
@@ -404,7 +404,7 @@ def test_meas_tech_is_not_a_public_input():
         }
     )
 
-    with pytest.raises(ValueError, match="meas_tech n'est pas"):
+    with pytest.raises(ValueError, match="meas_tech is not"):
         _complete_pdat(pdat)
 
 
@@ -425,7 +425,7 @@ def test_internal_predictors_are_rejected_from_idat(variable):
         }
     )
 
-    with pytest.raises(ValueError, match="prédicteurs internes"):
+    with pytest.raises(ValueError, match="internal predictors"):
         _prepare_data(pdat, idat)
 
 

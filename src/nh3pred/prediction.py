@@ -14,7 +14,7 @@ DATA_DIR = files("nh3pred").joinpath("data")
 
 @lru_cache(maxsize=1)
 def _load_model():
-    """Charge le modèle une seule fois, lors de la première prédiction."""
+    """Load the model once, when the first prediction is requested."""
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -27,8 +27,8 @@ def _load_model():
     model_parameters = model_parameters.copy()
     cat_vars = model_parameters.pop("cat_vars")
     cont_vars = model_parameters.pop("cont_vars")
-    # Compatibilité avec les anciens artefacts, entraînés sur la réponse
-    # cumulée normalisée et dépourvus de cette métadonnée.
+    # Support older artifacts trained on normalized cumulative emissions
+    # that do not contain this metadata.
     response = model_parameters.pop("response", "e_cum")
     if response == ["e_rel", "j_nh3_rel_log"]:
         response = "physical"
@@ -111,9 +111,9 @@ def _generate_tensors_predictors(df, id, cont_vars, cat_vars, device):
 
 
 def _generate_tensors_from_group(df_group, cont_vars, cat_vars, device):
-    """Construit les tenseurs d'une séquence déjà isolée.
+    """Build tensors from an already isolated sequence.
 
-    Cette variante évite de reparcourir tout le DataFrame pour chaque id.
+    This avoids scanning the entire DataFrame again for each application ID.
     """
 
     x_cont_tensor = torch.as_tensor(
@@ -132,10 +132,10 @@ def _generate_tensors_from_group(df_group, cont_vars, cat_vars, device):
 
 
 def _batched(items, batch_size):
-    """Découpe une liste en lots de taille ``batch_size``."""
+    """Split a list into batches of size ``batch_size``."""
 
     if batch_size < 1:
-        raise ValueError("batch_size doit être supérieur ou égal à 1")
+        raise ValueError("batch_size must be greater than or equal to 1")
 
     for start in range(0, len(items), batch_size):
         yield items[start : start + batch_size]
@@ -151,7 +151,7 @@ def _predict_prepared_groups(
     normalisation_values=None,
     response="e_cum",
 ):
-    """Prédit plusieurs séquences de longueurs variables par batch."""
+    """Predict batches of variable-length sequences."""
 
     predictions = {}
 
@@ -199,17 +199,17 @@ def _to_cumulative_emissions(
     normalisation_values,
     tan_app=None,
 ):
-    """Convertit une sortie du réseau en émission cumulée d'origine."""
+    """Convert network output to cumulative emissions in the original units."""
 
     predictions = np.asarray(predictions)
 
     if response == "e_rel":
         if tan_app is None:
-            raise ValueError("tan_app est requis pour convertir la réponse e_rel.")
+            raise ValueError("tan_app is required to convert the e_rel response.")
         predictions = predictions * normalisation_values["e_rel"] * np.asarray(tan_app)
     elif response == "physical":
         if tan_app is None:
-            raise ValueError("tan_app est requis pour le décodage physique.")
+            raise ValueError("tan_app is required for physical decoding.")
         predictions = predictions * np.asarray(tan_app)
     elif response in {"e_cum", "delta_e_cum"}:
         predictions = predictions * normalisation_values["e_cum"]
@@ -218,7 +218,7 @@ def _to_cumulative_emissions(
         predictions = np.cumsum(predictions, axis=-1)
     elif response not in {"e_cum", "e_cum_origin", "e_rel", "physical"}:
         raise ValueError(
-            f"Réponse inconnue : {response}. Valeurs possibles : "
+            f"Unknown response: {response}. Supported values: "
             "e_rel, e_cum, e_cum_origin, delta_e_cum, "
             "delta_e_cum_origin."
         )
@@ -230,7 +230,7 @@ def _to_cumulative_emissions(
 
 
 def _add_relative_emissions(predictions):
-    """Ajoute la réponse relative dénormalisée à la sortie publique."""
+    """Add unnormalized relative cumulative emissions to the public output."""
 
     predictions["prediction_erel"] = (
         predictions["prediction_ecum"] / predictions["tan_app"]
@@ -255,7 +255,7 @@ def _predict_emissions(
     batch_size=128,
 ):
 
-    # Le modèle est appliqué au pas de temps de référence, puis il y a ensuite une étape d'interpolation pour revenir aux pas de temps fournis par l'utilisateur
+    # Apply the model to the prepared sequence for each application.
 
     idat_origin = idat_origin.copy()
     data_predictions = idat.copy()
@@ -301,28 +301,30 @@ def _predict_emissions(
 
 def predict(pdat, idat=None, batch_size=128):
     """
-    Prédit les émissions cumulées d'ammoniac.
+    Predict cumulative ammonia emissions.
 
     Parameters
     ----------
-    pdat : pandas.DataFrame
-        Données décrivant chaque parcelle ou application.
 
+    pdat : pandas.DataFrame
+        Data describing each plot or application. See the ``Input reference``
+        vignette for the accepted columns, units and categories.
+    
     idat : pandas.DataFrame, optional
-        Données météorologiques et temporelles.
-        Si elles ne sont pas fournies, des valeurs par défaut sont utilisées.
+        Weather and time data. If omitted, default time and weather profiles
+        bundled with the package are used. See the ``Input reference`` vignette
+        for the accepted columns and units.
 
     batch_size : int, default=128
-        Nombre de séquences traitées simultanément par le modèle.
+        Number of sequences processed simultaneously by the model.
 
     Returns
     -------
     pandas.DataFrame
-        Données d'origine complétées avec les prédictions. La colonne
-        ``prediction_erel`` exprime l'émission cumulée prédite comme une
-        fraction du TAN appliqué. Toutes les colonnes numériques de la sortie
-        sont arrondies à deux décimales ; les calculs du modèle conservent leur
-        précision complète en interne.
+        Original data completed with predictions. The ``prediction_ecum``
+        column contains predicted cumulative ammonia emissions in kg N-NH3/ha.
+        The ``prediction_erel`` column expresses the same predictions as a
+        fraction of applied TAN.
     """
 
     model, cont_vars, cat_vars, normalisation_values, device, response = _load_model()

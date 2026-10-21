@@ -22,7 +22,7 @@ plot_level_columns_set = [
     "incorp",
     "till",
     "fer_origin",
-    "fer_forme",
+    "fer_form",
     "fer_trt1",
     "fer_trt2",
     "fer_trt3",
@@ -45,13 +45,12 @@ plot_level_columns_set = [
 interval_level_columns_set = ["air_temp", "wind_2m", "rain_rate"]
 
 
-# Sous-ensemble des modalités suffisamment représentées dans les données
-# ayant servi à l'entraînement final. Les dictionnaires de
-# correspondance conservent des niveaux historiques pour rester compatibles
-# avec l'architecture sauvegardée, mais ceux-ci ne sont pas exposés par l'API.
+# Categories sufficiently represented in the final training data.
+# The encoding dictionaries retain historical levels for compatibility
+# with the saved architecture; those levels are not exposed by the API.
 public_fertiliser_categories = {
     "fer_origin": {"pig", "cat", "other", "conc", "mix"},
-    "fer_forme": {"liquid", "solid"},
+    "fer_form": {"liquid", "solid"},
     "fer_trt1": {
         "none",
         "Acidification",
@@ -64,10 +63,10 @@ public_fertiliser_categories = {
 
 
 def _interpolate_default_series(variable, ct):
-    """Interpole un profil par défaut sur les temps demandés."""
+    """Interpolate a default profile at the requested times."""
     default_profile = default_values[variable]
 
-    # Compatibilité avec d'anciens fichiers de paramètres à valeur scalaire.
+    # Support older parameter files containing scalar defaults.
     if np.isscalar(default_profile):
         return np.full(len(ct), default_profile)
 
@@ -83,32 +82,32 @@ def _complete_pdat(pdat):
     pdat = pdat.copy()
 
     if "app_method" not in pdat.columns:
-        raise ValueError("app_method est requis dans pdat.")
+        raise ValueError("app_method is required in pdat.")
     if pdat["app_method"].isna().any():
-        raise ValueError("app_method ne peut pas contenir de valeur manquante.")
+        raise ValueError("app_method must not contain missing values.")
 
     if "meas_tech" in pdat.columns:
-        raise ValueError("meas_tech n'est pas une variable d'entrée publique.")
+        raise ValueError("meas_tech is not a public input variable.")
     if "fer_trt3" in pdat.columns:
-        raise ValueError("fer_trt3 n'est pas une variable d'entrée publique.")
+        raise ValueError("fer_trt3 is not a public input variable.")
 
-    # crop_z a une valeur par défaut conditionnelle. Une culture absente est
-    # assimilée à bare soil. La modalité "unknown" existe dans les artefacts
-    # internes, mais n'est pas exposée par l'API publique.
+    # crop_z has a conditional default. Missing crop values use the saved
+    # default. The "unknown" category exists in the internal artifacts but
+    # is not exposed by the public API.
     if "crop" not in pdat.columns:
         pdat["crop"] = default_values["crop"]
     else:
         pdat["crop"] = pdat["crop"].fillna(default_values["crop"])
 
     if pdat["crop"].eq("unknown").any():
-        raise ValueError("La modalité 'unknown' n'est pas autorisée pour crop.")
+        raise ValueError("The 'unknown' category is not allowed for crop.")
 
     bare_soil = pdat["crop"].eq("bare soil")
     if "crop_z" in pdat.columns:
         positive_bare_soil_height = bare_soil & pdat["crop_z"].gt(0)
         if positive_bare_soil_height.any():
             raise ValueError(
-                "crop_z doit être manquant ou nul lorsque crop = 'bare soil'."
+                "crop_z must be missing or zero when crop = 'bare soil'."
             )
 
     default_crop_z = np.where(bare_soil, -1000, default_values["crop_z"])
@@ -119,12 +118,12 @@ def _complete_pdat(pdat):
             pdat["crop_z"].notna(),
             default_crop_z,
         )
-        # Une hauteur nulle sur sol nu est acceptée côté utilisateur, puis
-        # convertie vers le code interne "non applicable".
+        # A zero height on bare soil is accepted as input, then converted
+        # to the internal "not applicable" code.
         pdat.loc[bare_soil, "crop_z"] = -1000
 
-    # time_incorp reste manquant sans incorporation. Pour les autres méthodes,
-    # sa valeur par défaut est la médiane calculée au niveau des plots.
+    # time_incorp remains missing without incorporation. Otherwise, its
+    # default is the median calculated at the plot level.
     if "incorp" not in pdat.columns:
         pdat["incorp"] = default_values["incorp"]
     else:
@@ -148,16 +147,15 @@ def _complete_pdat(pdat):
             default_time_incorp,
         )
 
-    # app_rate est estimé à partir de tan_app lorsqu'il n'est pas fourni.
-    # Compatibilité avec les anciens artefacts où sa valeur par défaut était
-    # un simple scalaire.
+    # Estimate app_rate from tan_app when it is not supplied.
+    # Support older artifacts where the default was a scalar.
     app_rate_parameters = default_values["app_rate"]
     if np.isscalar(app_rate_parameters):
         default_app_rate = np.full(len(pdat), app_rate_parameters)
     else:
         if "tan_app" not in pdat.columns:
             raise ValueError(
-                "tan_app est requis pour calculer app_rate lorsqu'il manque."
+                "tan_app is required to calculate app_rate when it is missing."
             )
         default_app_rate = (
             app_rate_parameters["intercept"]
@@ -173,17 +171,16 @@ def _complete_pdat(pdat):
             and pdat.loc[missing_app_rate, "tan_app"].isna().any()
         ):
             raise ValueError(
-                "tan_app est requis pour calculer les valeurs manquantes de app_rate."
+                "tan_app is required to calculate missing app_rate values."
             )
         pdat["app_rate"] = pdat["app_rate"].where(
             ~missing_app_rate,
             default_app_rate,
         )
 
-    # Pour les autres variables de niveau application, une colonne absente et
-    # une valeur NA ont la même signification : elles reçoivent toutes deux
-    # la valeur par défaut. Les cas conditionnels ci-dessus (crop_z,
-    # time_incorp et app_rate) restent traités séparément.
+    # For the other application-level variables, an absent column and an NA
+    # value both receive the default. The conditional cases above (crop_z,
+    # time_incorp and app_rate) are handled separately.
     specially_completed = {"crop", "crop_z", "incorp", "time_incorp", "app_rate"}
     for col in plot_level_columns_set:
         if col == "app_method" or col in specially_completed:
@@ -197,21 +194,21 @@ def _complete_pdat(pdat):
         invalid_values = set(pdat[variable].dropna()) - allowed_values
         if invalid_values:
             raise ValueError(
-                f"Modalité(s) non autorisée(s) pour {variable} : "
+                f"Unsupported category or categories for {variable}: "
                 f"{sorted(invalid_values)}"
             )
 
-    # fer_trt3 est conservé en interne pour la compatibilité avec les anciens
-    # artefacts. Les nouveaux modèles l'excluent car il n'a aucune variation
-    # dans les données finales. Il reste absent de la sortie utilisateur.
+    # Retain fer_trt3 internally for compatibility with older artifacts.
+    # Newer models exclude it because it has no variation in the final data.
+    # It is omitted from the public output.
     plot_level_origin = pdat.drop(columns="fer_trt3").copy()
 
-    # La sentinelle interne ne doit pas apparaître dans la sortie utilisateur.
+    # Do not expose the internal sentinel in the public output.
     plot_level_origin.loc[bare_soil, "crop_z"] = np.nan
 
-    # Sans incorporation, le temps d'incorporation est structurellement non
-    # applicable : NA dans la sortie utilisateur, sentinelle -1000 avant le
-    # codage interne en -2 pour le modèle.
+    # Without incorporation, the delay is structurally not applicable:
+    # NA in the public output, sentinel -1000 before internal recoding
+    # to -2 for the model.
     no_incorporation = pdat["incorp"].eq("none")
     plot_level_origin.loc[no_incorporation, "time_incorp"] = np.nan
     pdat.loc[no_incorporation, "time_incorp"] = -1000
@@ -281,7 +278,7 @@ def _add_indicator_variables(complete_table):
         "furrow_z",
     ]
 
-    # Ajout des variables indicatrices dans idat
+    # Add indicator variables to idat.
     for col in indicator_variables:
         complete_table[f"{col}_ind"] = np.select(
             [
@@ -307,7 +304,7 @@ def _split_wind_predictors(complete_table):
         "wind_chamber": complete_table["meas_tech"].isin(["chamber", "cps", "wt"]),
     }
     if not np.logical_xor(*branches.values()).all():
-        raise ValueError("Chaque ligne doit appartenir à une branche de vent.")
+        raise ValueError("Each row must belong to exactly one wind branch.")
 
     for variable, applicable in branches.items():
         known = applicable & source_known
@@ -360,7 +357,7 @@ def _renormalize_tables(complete_table):
         complete_table[s] = complete_table[s] / normalisation_values[s]
         indicator = f"{s}_ind"
         if indicator in complete_table.columns:
-            # -2 = non applicable ; +2 = valeur manquante.
+            # -2 = not applicable; +2 = missing value.
             complete_table[s] = complete_table[s].fillna(complete_table[indicator])
         else:
             complete_table[s] = complete_table[s].fillna(2)
@@ -374,7 +371,7 @@ def _recode_categorial_variables(complete_table):
 
     categorial_vars = list(categorial_correspondances.keys())
 
-    # Vérifier que toutes les modalités fournies sont connues.
+    # Check that all supplied categories are known.
     for var in categorial_vars:
         unknown_values = set(complete_table[var].dropna()) - set(
             categorial_correspondances[var].keys()
@@ -382,10 +379,10 @@ def _recode_categorial_variables(complete_table):
 
         if unknown_values:
             raise ValueError(
-                f"Modalité(s) inconnue(s) pour {var} : {sorted(unknown_values)}"
+                f"Unknown category or categories for {var}: {sorted(unknown_values)}"
             )
 
-    # Le dictionnaire imbriqué permet de recoder toutes les colonnes à la fois.
+    # Use the nested dictionary to recode all categorical columns at once.
     complete_table[categorial_vars] = (
         complete_table[categorial_vars]
         .replace(categorial_correspondances)
@@ -404,8 +401,8 @@ def _prepare_data(pdat, idat):
         if internal_inputs:
             variables = ", ".join(sorted(internal_inputs))
             raise ValueError(
-                f"{variables} ne doit pas être fourni dans idat : "
-                "ce sont des prédicteurs internes."
+                f"{variables} must not be supplied in idat: "
+                "these are internal predictors."
             )
 
     pdat, pdat_origin = _complete_pdat(pdat)

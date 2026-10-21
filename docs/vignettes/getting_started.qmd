@@ -13,7 +13,7 @@ execute:
 
 ## Overview
 
-The package exposes one user-facing function, `predict`. It predicts ammonia emission dynamics following fertilizer application. The model is a recurrent neural network trained on the ALFAM2 database (Hafner et al., 2025). See [here](model_description.html) for a full description of the model.
+The package exposes one user-facing function, `predict`. It predicts ammonia emission dynamics following fertilizer application. The model is a recurrent neural network trained on the ALFAM2 database ([Hafner et al., 2018](https://doi.org/10.1016/j.agrformet.2017.11.027) ; [Hafner et al., 2025](https://doi.org/10.1016/j.atmosenv.2024.120910)). See [here](model_description.html) for a full description of the model.
 
 This guide covers the three most common workflows:
 
@@ -105,13 +105,11 @@ custom_predictions[
 ]
 ```
 
-Supplied application values are retained unless a documented completion rule applies. All numeric output columns, including times and weather, are rounded to two decimals; calculations use full-precision inputs. A missing `air_temp` or `wind_2m` column is filled by interpolating the corresponding default profile at the requested `ct` values. An absent rainfall column defaults to zero. Missing values inside a supplied weather column are not filled with the default weather profile.
-Because public predictions represent micrometeorological measurements,
-`wind_2m` is routed internally to the model's micrometeorological wind input.
+User-supplied columns are preserved. A missing `air_temp` or `wind_2m` column is filled by interpolating the corresponding default profile at the requested `ct` values. Missing rainfall variables default to zero.
 
 ## Compare several scenarios
 
-Each row of `pdat` may describe a different scenario. Here, three otherwise identical applications differ only in application method.
+Each row of `pdat` may describe a different scenario. Here, three applications differ only in application method.
 
 ```{python}
 scenario_pdat = pd.DataFrame(
@@ -147,4 +145,4 @@ predictions = predict(
 
 ## Next steps
 
-Consult the [input reference](input_reference.html) for accepted columns, default values, and input conventions. Predictions outside the ranges represented in the training data should be interpreted cautiously.
+Consult the [input reference](input_reference.html) for all accepted columns, default values, and information on predictor distributions in the training data. Predictions outside the ranges represented in the training data should be interpreted cautiously.

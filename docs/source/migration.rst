@@ -26,15 +26,13 @@ time rows in increasing order, starting strictly after zero. ``app_method``
 is now required. Defaults and the fitted model have changed; a column rename
 does not reproduce the old predictions. Pin ``nh3pred==0.1.3`` for old results.
 
-The output adds ``prediction_erel`` (fraction of applied TAN). The public
-function rounds all numeric output columns to two decimals. Prediction uses
-the original input precision internally.
+The output adds ``prediction_erel`` (fraction of applied TAN). 
 
-Current public treatment categories are ``none``, ``Acidification``,
+Current treatment categories are ``none``, ``Acidification``,
 ``Diluted``, ``Anaerobic digestion``, ``Irrigated`` for ``fer_trt1`` and
 ``none``, ``Separation`` for ``fer_trt2``. Fertilizer origins accepted by the
-current code are ``pig``, ``cat``, ``other``, ``conc``, ``mix``. Neither
-``meas_tech`` nor ``fer_trt3`` is a public input. See the input-reference
+current code are ``pig``, ``cat``, ``other``, ``conc``, ``mix``. 
+See the input-reference
 vignette for all accepted categories and default values.
 
 Pandas 3.0 or later is required to load the bundled serialized parameters.

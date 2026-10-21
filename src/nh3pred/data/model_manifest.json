@@ -1,12 +1,12 @@
 {
-  "package_version": "0.2.0",
+  "package_version": "0.2.1",
   "model_id": "physical-reservoir-20260915",
   "source": "scripts/package at migration on 2026-10-19",
   "artifacts_sha256": {
-    "default_values.pkl": "a3a9b5884c1d88cc3d9603be2b63507cc292e63a83768d0387bebab4dbfdc725",
+    "default_values.pkl": "ccc8dff976a08d3d99e6233c767ce2f3b2ef8f0e8f11f05a9b3239debdf581c1",
     "model.pth": "2baef0df0f2fffe313dd62b93c488a6bd2e11176fc1c454690d931f059207628",
-    "categorial_correspondances.pkl": "a1e3d2e440a94369b91bc0d8986131332f84110b233738afa78236ea6e62bf43",
-    "model_parameters.pkl": "7267ae4a9da0fb3a2fb3dd8ae1fc9cd3a903957d519aa40a6c26f7df73888d74",
+    "categorial_correspondances.pkl": "1d767ec3a7db7afacb0e743985e47c46fd19104cc60799202f3d50820fbc495d",
+    "model_parameters.pkl": "20dcac6166c57d62ad5c2649dca356e5d8d36541f0d5983b0f8051362a73da60",
     "normalisation_values.pkl": "5024660fe313feb1aeb59aa837f1fe78fed9ae690801a0bbdd0bc9e68756a504"
   },
   "reference_cases": [

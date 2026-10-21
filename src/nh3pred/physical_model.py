@@ -1,4 +1,4 @@
-"""Décodage du taux cinétique latent en émissions physiquement cohérentes."""
+"""Decode the latent kinetic rate into physically consistent emissions."""
 
 import torch
 import torch.nn.functional as F
@@ -11,7 +11,7 @@ def decode_physical_predictions(
     kinetic_rate_scale=1e-2,
     flux_floor=1e-6,
 ):
-    """Décode chaque séquence en cumul borné et en flux positif."""
+    """Decode each sequence into bounded cumulative emissions and non-negative flux."""
 
     padded_latent, lengths = model_output
     decoded = []

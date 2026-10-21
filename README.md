@@ -1,7 +1,6 @@
 # nh3pred
 
-Predict cumulative ammonia emissions after field fertilizer application using
-an embedded physical reservoir recurrent model.
+Predict cumulative ammonia emissions after field fertilizer application using a recurrent neural network coupled with a physically constrained TAN reservoir. A detailed description of the model is available in the Model and interpretation vignette (see Documentation).
 
 ## Installation
 
@@ -28,22 +27,20 @@ Each row of `pdat` describes one application. Required columns are `id`,
 `tan_app` (kg N/ha) and `app_method`. Optional `idat` supplies `id`, `ct`
 (hours since application), `air_temp`, `wind_2m` and `rain_rate`.
 Times must be positive and strictly increasing within each application.
-If omitted, weather and time profiles use the bundled defaults, through 240 h.
+If idat is omitted, `predict()` uses the default time and weather profiles bundled with the package, covering the first 240 h after application.
 
 ```python
 idat = pd.DataFrame({
-    "id": [1, 1, 1], "ct": [2.0, 12.0, 48.0],
-    "air_temp": [15.0, 18.0, 12.0], "wind_2m": [2.0, 3.0, 1.0],
+    "id": [1, 1, 1], 
+    "ct": [2.0, 12.0, 48.0],
+    "air_temp": [15.0, 18.0, 12.0], 
+    "wind_2m": [2.0, 3.0, 1.0],
     "rain_rate": [0.0, 0.0, 0.0],
 })
 result = predict(pdat, idat, batch_size=128)
 ```
 
-`prediction_ecum` is cumulative emission in kg N-NH3/ha;
-`prediction_erel` is its fraction of applied TAN. Public numeric outputs
-are rounded to two decimals. Calculations use full precision internally.
-The decoder produces nondecreasing emissions bounded by applied TAN for
-valid positive time intervals and nonnegative TAN.
+`prediction_ecum` is cumulative emission in kg N-NH3/ha; `prediction_erel` is its fraction of applied TAN. 
 
 ## Migration from 0.1.3
 
@@ -54,34 +51,14 @@ Rename `pmid -> id`, `app_mthd -> app_method`, `man_source -> fer_origin`,
 The new model, defaults and accepted categories differ: reproducing 0.1.3
 results requires installing `nh3pred==0.1.3`.
 
-## Documentation and model
+## Documentation
 
-The documentation includes API help, a migration guide and the rendered
-vignettes and their executable Quarto sources. Model weights and all inference parameters are bundled;
-no training dataset or network download is needed for prediction.
-The public interface represents micrometeorological applications.
-See `src/nh3pred/data/model_manifest.json` for model identity and checksums.
+The documentation includes API reference material, a migration guide, and four vignettes illustrating the main features of the package:
 
-## Development
+- **Getting started** provides simple examples showing how to prepare inputs and generate predictions.
+- **Input reference** describes the model inputs and shows their distributions in the training data.
+- **Model and interpretation** describes the model architecture, including the physically constrained TAN reservoir, and provides guidance for interpreting its predictions.
+- **Scenario comparison** illustrates how the package can be used to compare ammonia emission predictions across contrasting application scenarios.
 
-```bash
-pip install -e '.[dev,build,docs]'
-python -m pytest
-python -m build
-python -m twine check dist/*
-python docs/render_vignettes.py  # requires Quarto and pdflatex
-python -m sphinx -W -b html docs/source docs/_build/html
-```
-
-The wheel contains only inference code and model resources. Tests and
-documentation are included in the source distribution. Training and exploratory
-analysis remain in the research repository.
-
-The vignette renderer uses the current Python interpreter and a temporary
-Jupyter kernel. It executes synthetic prediction examples with the installed
-package and writes four self-contained HTML files and one combined PDF to
-`docs/source/_static/vignettes/`. Interpretation graphics are precomputed;
-their source research data are not included or needed for rendering.
-
-
+The documentation also provides the executable Quarto sources used to generate the vignettes.
 

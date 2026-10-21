@@ -76,8 +76,10 @@ Les quatre vignettes disposent maintenant de sources Quarto dans
 utilisent `from nh3pred import predict` et des données synthétiques, sans
 accès au dépôt de recherche. Les catégories publiques, les défauts,
 les arrondis et la gestion des colonnes météo sont documentés pour 0.2.0.
-Les anciennes statistiques de population non cohérentes ont été retirées
-de la référence des entrées.
+Les statistiques de population avaient été retirées de la référence des
+entrées à cette étape. Rectification après vérification du découpage :
+les 2 128 applications et 51 499 observations d'origine correspondent bien
+au sous-ensemble d'entraînement ; elles n'étaient pas incohérentes.
 
 Les 19 cellules Python ont été exécutées lors du rendu HTML, puis de nouveau
 pour le PDF combiné (25 pages), avec l'environnement récent. La construction
@@ -92,3 +94,28 @@ pas une évaluation indépendante. Seuls les graphiques et leurs métadonnées
 agrégées sont distribués ; leur recalcul nécessite le dépôt de recherche.
 
 Aucun envoi sur PyPI ou TestPyPI n'a été effectué.
+
+## Restauration des vignettes d'origine — étape 1
+
+À la demande de l'auteur, `Getting started` et `Input reference` ont ensuite
+été restaurées depuis `06_vignette/`, avec uniquement l'adaptation de l'import
+dans `Getting started`. Les tableaux et textes d'origine sont conservés.
+Les écarts avec l'API actuelle sont recensés, sans correction de fond,
+dans `VIGNETTE_REVIEW.md`, pour décision de l'auteur avant publication.
+Les rendus HTML et le PDF combiné ont été régénérés avec succès avec le
+package installé ; les deux autres sources de vignettes n'ont pas été modifiées.
+Les distributions de l'essai TestPyPI antérieur n'ont pas été reconstruites.
+
+## Restauration des vignettes d'origine — étape 2
+
+`Scenario comparisons` a été restaurée avec le seul changement d'import.
+`Model architecture and interpretation` a été restaurée en conservant le
+texte et les équations ; seules les lectures de ressources et de résultats
+précalculés ainsi que les références de format des images sont adaptées
+à un rendu indépendant. Les quatre figures PDF et les métadonnées sont
+identiques aux résultats de recherche, dont l'empreinte a été vérifiée.
+Les points de fond supplémentaires restent dans `VIGNETTE_REVIEW.md`,
+sans modification des textes ou des valeurs des scénarios.
+Le rendu complet a réussi avec le package installé dans l'environnement
+isolé : exécution des exemples, HTML et PDF combiné. Les deux premières
+sources restaurées à l'étape 1 restent inchangées.

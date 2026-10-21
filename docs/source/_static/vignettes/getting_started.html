@@ -3131,7 +3131,7 @@ width: 100% !important;
 
 <section id="overview" class="level2">
 <h2 class="anchored" data-anchor-id="overview">Overview</h2>
-<p>The package exposes one user-facing function, <code>predict</code>. It predicts ammonia emission dynamics following fertilizer application. The model is a recurrent neural network trained on the ALFAM2 database (Hafner et al., 2025). See <a href="model_description.html">here</a> for a full description of the model.</p>
+<p>The package exposes one user-facing function, <code>predict</code>. It predicts ammonia emission dynamics following fertilizer application. The model is a recurrent neural network trained on the ALFAM2 database (<a href="https://doi.org/10.1016/j.agrformet.2017.11.027">Hafner et al., 2018</a> ; <a href="https://doi.org/10.1016/j.atmosenv.2024.120910">Hafner et al., 2025</a>). See <a href="model_description.html">here</a> for a full description of the model.</p>
 <p>This guide covers the three most common workflows:</p>
 <ol type="1">
 <li>predicting from plot-level data only;</li>
@@ -3141,7 +3141,7 @@ width: 100% !important;
 </section>
 <section id="import-the-package" class="level2">
 <h2 class="anchored" data-anchor-id="import-the-package">Import the package</h2>
-<div id="76b74d12" class="cell" data-execution_count="1">
+<div id="a4aa9788" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -3152,7 +3152,7 @@ width: 100% !important;
 <h2 class="anchored" data-anchor-id="minimal-prediction">Minimal prediction</h2>
 <p><code>pdat</code> contains one row per field application. The <code>id</code> column uniquely identifies each application and links it to optional time-dependent data.</p>
 <p>Only the variables needed to describe this example are supplied below. All other variables are completed with package defaults.</p>
-<div id="9ac66bc4" class="cell" data-execution_count="2">
+<div id="fc545c56" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>pdat <span class="op">=</span> pd.DataFrame(</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    {</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;id&quot;</span>: [<span class="dv">1</span>],</span>
@@ -3164,7 +3164,7 @@ width: 100% !important;
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>predictions <span class="op">=</span> predict(pdat)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>When <code>idat</code> is omitted, predictions use cumulative times 2, 4, and then four-hour intervals from 4 to 48 h, and twelve-hour intervals from 48 to 240 h. The package uses a repeating default daily temperature and wind profile and assumes no rainfall.</p>
-<div id="b795dcbc" class="cell" data-execution_count="3">
+<div id="09a09582" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>predictions[</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    [</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;id&quot;</span>,</span>
@@ -3246,7 +3246,7 @@ width: 100% !important;
 </section>
 <section id="plot-the-prediction" class="level2">
 <h2 class="anchored" data-anchor-id="plot-the-prediction">Plot the prediction</h2>
-<div id="e7935eff" class="cell" data-execution_count="4">
+<div id="2a171317" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="fl">4.5</span>))</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>ax.plot(</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    predictions[<span class="st">&quot;ct&quot;</span>],</span>
@@ -3276,7 +3276,7 @@ width: 100% !important;
 <section id="supply-custom-time-and-weather-data" class="level2">
 <h2 class="anchored" data-anchor-id="supply-custom-time-and-weather-data">Supply custom time and weather data</h2>
 <p><code>idat</code> contains one row per application and time point. Time points may be irregular. In this example, air temperature is supplied while wind and rainfall are omitted.</p>
-<div id="a9f183f9" class="cell" data-execution_count="5">
+<div id="936f83e2" class="cell" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>idat <span class="op">=</span> pd.DataFrame(</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    {</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;id&quot;</span>: [<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>],</span>
@@ -3358,12 +3358,12 @@ width: 100% !important;
 </div>
 </div>
 </div>
-<p>Supplied application values are retained unless a documented completion rule applies. All numeric output columns, including times and weather, are rounded to two decimals; calculations use full-precision inputs. A missing <code>air_temp</code> or <code>wind_2m</code> column is filled by interpolating the corresponding default profile at the requested <code>ct</code> values. An absent rainfall column defaults to zero. Missing values inside a supplied weather column are not filled with the default weather profile. Because public predictions represent micrometeorological measurements, <code>wind_2m</code> is routed internally to the model’s micrometeorological wind input.</p>
+<p>User-supplied columns are preserved. A missing <code>air_temp</code> or <code>wind_2m</code> column is filled by interpolating the corresponding default profile at the requested <code>ct</code> values. Missing rainfall variables default to zero.</p>
 </section>
 <section id="compare-several-scenarios" class="level2">
 <h2 class="anchored" data-anchor-id="compare-several-scenarios">Compare several scenarios</h2>
-<p>Each row of <code>pdat</code> may describe a different scenario. Here, three otherwise identical applications differ only in application method.</p>
-<div id="429e2fd4" class="cell" data-execution_count="6">
+<p>Each row of <code>pdat</code> may describe a different scenario. Here, three applications differ only in application method.</p>
+<div id="9ca9cd9f" class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>scenario_pdat <span class="op">=</span> pd.DataFrame(</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    {</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;id&quot;</span>: [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>],</span>
@@ -3423,7 +3423,7 @@ width: 100% !important;
 </section>
 <section id="control-computation-time" class="level2">
 <h2 class="anchored" data-anchor-id="control-computation-time">Control computation time</h2>
-<div id="79b6b24f" class="cell" data-execution_count="7">
+<div id="099288ad" class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>predictions <span class="op">=</span> predict(</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    pdat,</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    idat,</span>
@@ -3436,7 +3436,7 @@ width: 100% !important;
 </section>
 <section id="next-steps" class="level2">
 <h2 class="anchored" data-anchor-id="next-steps">Next steps</h2>
-<p>Consult the <a href="input_reference.html">input reference</a> for accepted columns, default values, and input conventions. Predictions outside the ranges represented in the training data should be interpreted cautiously.</p>
+<p>Consult the <a href="input_reference.html">input reference</a> for all accepted columns, default values, and information on predictor distributions in the training data. Predictions outside the ranges represented in the training data should be interpreted cautiously.</p>
 </section>
 
 </main>

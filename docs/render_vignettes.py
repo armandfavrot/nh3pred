@@ -1,6 +1,6 @@
-"""Execute installed-package examples and render self-contained vignettes.
+"""Execute installed-package examples and render self-contained HTML vignettes.
 
-Requires the docs extra, Quarto and pdflatex. Never reads research datasets.
+Requires the docs extra and Quarto. Never reads research datasets.
 All intermediate files and the Jupyter kernel are isolated in a temporary folder.
 """
 
@@ -21,12 +21,6 @@ def main():
         "input_reference",
         "scenario_comparison",
         "model_description",
-    ]
-    titles = [
-        "Getting started",
-        "Input reference",
-        "Scenario comparison",
-        "Model and interpretation",
     ]
     with tempfile.TemporaryDirectory(prefix="nh3pred-vignettes-") as temporary:
         root = Path(temporary)
@@ -68,31 +62,9 @@ def main():
                 env=env,
                 check=True,
             )
-        combined = """---
-title: "nh3pred 0.2.0: vignettes"
-format:
-  pdf:
-    pdf-engine: pdflatex
-    latex-auto-install: false
-jupyter: python3
-execute:
-  warning: false
----
-"""
-        for name, title in zip(names, titles):
-            body = (work / (name + ".qmd")).read_text().split("---", 2)[2]
-            combined += "\n\\newpage\n\n# " + title + "\n" + body
-        (work / "ammonia_emissions_vignettes.qmd").write_text(combined)
-        subprocess.run(
-            ["quarto", "render", "ammonia_emissions_vignettes.qmd", "--to", "pdf"],
-            cwd=work,
-            env=env,
-            check=True,
-        )
         destination.mkdir(parents=True, exist_ok=True)
         for filename in [
             *(name + ".html" for name in names),
-            "ammonia_emissions_vignettes.pdf",
             "styles.css",
         ]:
             shutil.copy2(work / filename, destination / filename)
