@@ -5,7 +5,7 @@ Predict cumulative ammonia emissions after field fertilizer application using a 
 ## Installation
 
 ```bash
-pip install nh3pred==0.2.0
+pip install nh3pred
 ```
 
 Version 0.2.0 changes the model and input interface. See the migration guide
